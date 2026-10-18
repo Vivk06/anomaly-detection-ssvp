@@ -35,10 +35,3 @@ The smoke suite runs with CPU dummy tensors. Supply your own MVTec AD root and c
 <!-- results:end -->
 
 The table is generated from [metrics.csv](results/metrics.csv) and [captions.csv](results/captions.csv) by [render_tables.py](scripts/reporting/render_tables.py). It transcribes source results; it does not rerun experiments. Full tables are in [results/tables](results/tables/).
-
-## Contact
-
-**Kedar Athrey**
-
-- [LinkedIn](https://www.linkedin.com/in/kedar-athrey-4324442ab)
-- [GitHub](https://github.com/Toast24)
