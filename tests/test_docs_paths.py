@@ -22,7 +22,10 @@ def test_document_links_and_repo_paths_exist():
         if "file:///" in text:
             failures.append(f"{doc}: file URI")
         for raw in re.findall(r"\]\(([^)]+)\)", text):
-            destination = unquote(raw.split("#", 1)[0].strip().split()[0])
+            path_part = raw.split("#", 1)[0].strip()
+            if not path_part:
+                continue
+            destination = unquote(path_part.split()[0])
             if not destination or re.match(r"^[a-z]+://", destination) or destination.startswith("<"):
                 continue
             if not (doc.parent / destination).exists():

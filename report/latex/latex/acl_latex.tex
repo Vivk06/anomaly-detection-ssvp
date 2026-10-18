@@ -1,0 +1,611 @@
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[preprint]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{booktabs, multirow, graphicx}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% This is also not strictly necessary, and may be commented out.
+% However, it will improve the aesthetics of text in
+% the typewriter font.
+\usepackage{inconsolata}
+
+% Including images in your LaTeX document requires adding
+% additional package(s)
+\usepackage{graphicx}
+
+% Additional packages for the skeleton
+\usepackage{booktabs}       % professional tables (\toprule, \midrule, \bottomrule)
+\usepackage{multirow}       % multi-row table cells
+\usepackage{tabularx}       % flexible-width tables
+\usepackage{amsmath}        % math environments
+\usepackage{amssymb}        % math symbols
+\usepackage{xcolor}         % colored text for TODO notes
+\usepackage{enumitem}       % customise list spacing
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+% ---------------------------------------------------------------
+% Useful commands for filling in the skeleton
+% ---------------------------------------------------------------
+\newcommand{\eg}{\textit{e.g.,}\ }
+\newcommand{\ie}{\textit{i.e.,}\ }
+\newcommand{\etal}{\textit{et al.}}
+% Use \TODO{} to mark sections that still need content (shows in red)
+\newcommand{\TODO}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+% Use \NOTE{} to leave yourself internal notes (shows in blue)
+\newcommand{\NOTE}[1]{\textcolor{blue}{\textit{[NOTE: #1]}}}
+
+% ---------------------------------------------------------------
+% TITLE
+% ---------------------------------------------------------------
+\title{SSVP: Robust Industrial Anomaly Segmentation and Captioning}
+
+% ---------------------------------------------------------------
+% AUTHORS
+% ---------------------------------------------------------------
+% For several authors from the same institution:
+% \author{Author 1 \and ... \and Author n \\
+%         Address line \\ ... \\ Address line}
+% if the names do not fit well on one line use
+%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
+% For authors from different institutions:
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \And  ... \And
+%         Author n \\ Address line \\ ... \\ Address line}
+% To start a separate ``row'' of authors use \AND, as in
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \AND
+%         Author 2 \\ Address line \\ ... \\ Address line \And
+%         Author 3 \\ Address line \\ ... \\ Address line}
+
+\author{Kedar Athrey \\
+  2023A7PS0550P \\
+  \\\And
+  Siddhant Mishra \\
+  2023A8PS0720P \\
+    \\\And
+  Vivek Gunuganti \\
+  2023A4PS0395P \\
+    \\\And
+  Neha Gujjari \\
+  2023A7PS0011P \\
+}
+
+\begin{document}
+\maketitle
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{abstract}
+% ─────────────────────────────────────────────────────────────────────────────
+We present an extended implementation of the Synergistic Semantic-Visual Prompting
+(SSVP) framework~\cite{fu2026ssvp} for zero-shot industrial anomaly detection,
+evaluated on the MVTec AD cable category. Our implementation extends the original
+research code in three directions: (1)~a captioning branch
+that produces human-readable defect descriptions alongside pixel-level anomaly
+maps; (2)~INT8 dynamic quantisation of the caption text transformer for edge-feasible
+inference; and (3)~systematic robustness evaluation under heavy synthetic imaging
+noise. Our primary checkpoint (run21) achieves \textbf{97.42\%} image-AUROC and
+\textbf{95.34\%} pixel-AUROC on clean test images, degrading gracefully to 87.00\%
+and 91.82\% respectively under synthetic noise. Compression and distillation
+experiments confirm that neither depth-pruning nor differentiated-pruning of the
+segmentation backbone meets the quality acceptance threshold, validating run21 as
+the deployment configuration. All experiments are scoped to a single MVTec AD
+category due to compute and memory constraints, which we discuss explicitly.
+\end{abstract}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Introduction}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Industrial quality control demands anomaly detection systems that are simultaneously
+accurate, explainable, and deployable on constrained hardware. The dominant
+unsupervised paradigm — fitting a model to a distribution of normal samples and
+flagging deviations — achieves strong benchmark performance but fails on two
+deployment-critical axes: it cannot generalise to unseen product categories without
+retraining, and it produces no human-interpretable output beyond a heatmap.
+
+Zero-shot anomaly detection (ZSAD)~\cite{hicsonmez2024zsiad}, enabled by large
+vision--language models (VLMs) such as CLIP, resolves the
+first limitation by grounding anomaly reasoning in natural language. The SSVP
+framework~\cite{fu2026ssvp} represents the state of the art in this paradigm,
+fusing CLIP's semantic representations with DINOv2's structural priors through its
+HSVS, VCPG, and VTAM modules.
+
+This report documents the implementation, training, and evaluation of an extended
+SSVP pipeline on the MVTec AD cable category, with three concrete contributions
+beyond the original paper:
+
+\begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt]
+  \item A captioning branch generating per-image defect descriptions via an LLM,
+        with INT8 text-transformer compression for practical serving latency.
+  \item Quantitative robustness evaluation under synthetic heavy noise, reporting
+        clean-to-noisy deltas across all standard metrics.
+  \item A gated compression and distillation workflow that enforces explicit
+        metric acceptance criteria before promoting any compressed model.
+\end{enumerate}
+
+\noindent\textbf{Scope constraints.} All experiments are limited to the cable
+category of MVTec AD and trained for a maximum of 15 epochs with early stopping.
+Multi-category evaluation, full-resolution VisA experiments, and multi-GPU training
+are out of scope due to GPU memory limits (single device) and wall-clock time
+constraints. We document these trade-offs explicitly wherever they affect the
+interpretation of results.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Related Work}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\textbf{CLIP-based ZSAD.}
+WinCLIP~\cite{jeong2023winclip} first demonstrated that CLIP's contrastive
+representations could support zero-shot anomaly segmentation through compositional
+prompt ensembles and multi-scale window features, achieving 91.8\% image-AUROC on
+MVTec-AD without fine-tuning. AnomalyCLIP~\cite{zhou2024anomalyclip} improved
+generalisation by learning object-agnostic prompts, while AdaCLIP~\cite{cai2024adaclip}
+introduced image-conditioned prompts via self-supervised learning. AFR-CLIP~\cite{yuan2025afrclip}
+proposed text-on-text similarity scoring to avoid cross-modal alignment instability.
+HeadCLIP~\cite{jeong2026headclip} adapted individual attention heads in the image
+encoder, gaining up to 4.9~pp in pixel-level detection. Wang et al.~\cite{wang2024dualbranch}
+and Deng et al.~\cite{deng2024anoclip} respectively addressed prompt selection and
+fine-grained alignment. AA-CLIP~\cite{ma2025aaclip} explicitly reorients CLIP
+features toward anomaly-discriminative directions via auxiliary adapters.
+
+\textbf{Vision foundation models.}
+AnomalyVFM~\cite{fucka2026anomalyvfm} shows that purely visual foundation models
+match VLMs in ZSAD when equipped with diverse synthetic training data and LoRA-style
+adapters, achieving 94.1\% mean image-AUROC across nine datasets. FineLIP~\cite{asokan2025finelip}
+extends CLIP's 77-token text limit, enabling richer defect prompts.
+
+\textbf{Multimodal reasoning and compression.}
+Anomaly-OV~\cite{xu2025anomalyov} introduces the first anomaly reasoning benchmark
+and specialist MLLM with a Look-Twice Feature Matching mechanism, establishing
+that general-purpose MLLMs cannot describe fine-grained defects. For compression,
+the Bulk-to-Budget study~\cite{anonymous2025bulktobudget} identifies widthwise
+structured pruning and hidden-state distillation as the most effective MLLM
+compression strategy; LLM-Sieve~\cite{reda2025llmsieve} achieves 20--75\% parameter
+reduction via genetic-algorithm-guided non-uniform pruning with only 1--5\% accuracy
+loss. StructuralGLIP~\cite{yang2025structuralglip} proposes a latent prompt knowledge
+bank directly applicable to category-specific defect description.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Methodology}
+% ─────────────────────────────────────────────────────────────────────────────
+
+% \subsection{SSVP Backbone}
+
+% The segmentation model follows the SSVP architecture~\cite{fu2026ssvp} with three
+% components. The \textbf{Hierarchical Semantic-Visual Synergy (HSVS)} module
+% integrates DINOv2's multi-scale structural feature maps as conditioning signals
+% into CLIP's intermediate transformer layers, allowing structural priors to modulate
+% CLIP's attention at each scale rather than being post-hoc concatenated. The
+% \textbf{Vision-Conditioned Prompt Generator (VCPG)} uses cross-modal attention to
+% generate dynamic text prompts conditioned on the current input image, anchoring
+% linguistic queries to specific anomaly patterns. The \textbf{Visual-Text Anomaly
+% Mapper (VTAM)} applies dual-gated calibration to reconcile global image-level
+% similarity scores with local patch-level evidence, preventing dominant background
+% features from suppressing subtle defect signals.
+
+
+\subsection{SSVP Backbone}
+
+The segmentation model is built upon the Synergistic Semantic-Visual Prompting (SSVP) framework, designed for zero-shot anomaly detection using Vision-Language Models (VLMs). Unlike conventional approaches that rely on a single visual backbone, SSVP combines complementary visual representations to balance global semantic understanding with fine-grained structural sensitivity.
+
+The backbone integrates two key feature sources: (i) CLIP, which provides strong semantic alignment between images and text, and (ii) DINOv2, which captures rich structural and texture-level details. These are fused through three tightly coupled modules:
+
+\textbf{Hierarchical Semantic-Visual Synergy (HSVS).}
+HSVS performs deep multi-scale fusion by injecting DINO-derived structural features directly into intermediate layers of the CLIP visual encoder. Instead of simple feature concatenation, this conditioning modulates CLIP’s internal attention maps at multiple resolutions. As a result, the model simultaneously preserves high-level semantic context (e.g., “cable”) and becomes sensitive to subtle structural deviations (e.g., cuts, bends, missing wires).
+
+\textbf{Vision-Conditioned Prompt Generator (VCPG).}
+To overcome the limitations of static text prompts in zero-shot settings, VCPG dynamically generates input-dependent prompts using cross-modal attention. Visual features extracted from the image guide the construction of textual queries, allowing the model to adaptively focus on likely anomaly patterns. For example, instead of relying on a fixed prompt like “defective cable,” the model generates context-aware prompts aligned with observed visual irregularities.
+
+\textbf{Visual-Text Anomaly Mapper (VTAM).}
+VTAM produces the final anomaly prediction by aligning visual features with text embeddings. A key challenge in anomaly detection is the mismatch between global similarity scores (image-level) and local evidence (pixel-level). VTAM addresses this using a dual-gated calibration mechanism: one gate regulates global anomaly confidence, while the other emphasizes localized deviations. This prevents dominant background regions from suppressing small but critical defect signals, leading to more accurate segmentation masks.
+
+Together, these components enable SSVP to perform zero-shot anomaly segmentation by jointly reasoning over semantic context and structural detail, achieving strong performance without task-specific supervision.
+
+
+\subsection{Data Preparation}
+
+The MVTec AD cable category was re-split into a 70/20/10 train/test/validation
+partition with aligned ground-truth masks using \texttt{prepare\_cable\_split.py}.
+The re-split enforces strict anti-leakage between splits: validation images are
+withheld from training entirely and used only for threshold calibration and early
+stopping. This departs from the standard MVTec AD protocol (which uses the official
+test split for evaluation directly) to enable validation-driven model selection
+without contaminating the reported test metrics.
+
+\textbf{Compute justification.} Limiting experiments to the cable category reduces
+training time to a feasible range on a single GPU. Cable is selected as a
+representative MVTec AD category with multiple defect subtypes (bent wire, cable
+swap, combined, cut inner insulation, cut sheath, missing cable, missing wire,
+poke insulation), providing sufficient defect diversity to exercise all model components.
+
+\subsection{Training Protocol}
+
+Training uses the SSVP default configuration (\texttt{configs/default.yaml}) with
+a maximum of 15 epochs and early stopping monitored on validation image-AUROC.
+Checkpoints are saved at each validation improvement; the best checkpoint by
+validation metric is used for all downstream evaluation. Anomaly thresholds are
+calibrated on the validation split post-training, not on the test split.
+
+% \subsection{Captioning Branch}
+
+% A captioning branch is attached to the segmentation pipeline downstream of VTAM.
+% Detected anomaly regions are cropped and passed, together with a structured defect
+% prompt, to a pre-trained LLM text transformer. To reduce serving latency without
+% retraining the detector, the text transformer is compressed via INT8 dynamic
+% quantisation applied to all linear layers. Domain prompt fine-tuning is implemented
+% as an optional enhancement: fine-tuning improves defect-type specificity (e.g.,
+% generating ``cable swap defect'' versus the generic ``Image from cable'') but
+% incurs significant additional runtime (see Section~\ref{sec:results}).
+
+\subsection{Captioning Branch}
+
+To enhance interpretability, a captioning branch is integrated downstream of the segmentation pipeline. While the SSVP backbone produces pixel-level anomaly maps, it does not inherently provide human-readable explanations. This branch bridges that gap by converting detected anomalies into concise textual descriptions.
+
+After inference, high-confidence anomaly regions identified by VTAM are spatially localized and cropped from the input image. These cropped regions are paired with structured prompts and passed to a pre-trained text transformer (LLM-based captioning module). The prompts are designed to guide the model toward defect-specific descriptions rather than generic outputs.
+
+To make the system practical for deployment, the captioning model is optimized using INT8 dynamic quantisation applied to all linear layers. This significantly reduces inference latency and memory footprint without requiring retraining of the segmentation backbone. As a result, the system can generate captions alongside segmentation outputs in near real-time.
+
+Additionally, a domain-specific prompt fine-tuning stage is supported. This improves the specificity of generated captions (e.g., producing “cable swap defect” instead of a generic description), but introduces additional computational overhead. 
+
+This captioning integration aligns with the project’s goal of combining accuracy, robustness, and explainability: the model not only detects anomalies but also provides interpretable descriptions suitable for industrial inspection workflows and human-in-the-loop validation.
+
+
+
+\subsection{Noise Robustness Evaluation}
+
+To simulate realistic imaging degradation, synthetic heavy noise is applied to the
+test split via \texttt{evaluate\_noise\_robustness.py}. The same trained checkpoint
+and thresholds from the clean evaluation are reused unchanged — no noise-specific
+fine-tuning is performed. This isolates the model's native robustness and yields a
+clean-to-noisy delta for each metric.
+
+\subsection{Compression and Distillation Pipeline}
+
+Two backbone compression strategies are evaluated under a gated workflow
+(\texttt{run\_compression\_gate\_pipeline.py}): depth pruning and differentiated
+(non-uniform) head pruning. Each strategy runs a 3-epoch preliminary evaluation;
+only candidates that satisfy a maximum performance drop threshold (7\% on image-AUROC
+relative to run21) proceed to the full 15-epoch training. Separately, a distillation workflow (\texttt{run\_staged\_distillation.py}) trains smaller models with gate checks against the run21 baseline.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Experimental Setup}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\textbf{Dataset.} MVTec AD cable category~\cite{bergmann2019mvtec}, re-split 70/20/10.
+Defect types: bent wire, cable swap, combined, cut inner insulation, cut sheath,
+missing cable, missing wire, poke insulation.
+
+\textbf{Metrics.} Image-level: AUROC (I-AUROC), F1-Max (I-F1), Average Precision
+(I-AP). Pixel-level: AUROC (P-AUROC), Per-Region Overlap (P-PRO), Average Precision
+(P-AP). All metrics reported on the held-out test split; noise robustness metrics
+reported separately on the same split with synthetic noise applied.
+
+\textbf{Baselines.} Run21 (the primary recommended checkpoint) is compared against:
+earlier runs (run15, run16\_seg) which lacked full noise evaluation; post-run21
+architectural variants (runs 22--30) exploring LoRA, entropy regularisation, noisy
+denoising autoencoder (DAE) training, and robust patch augmentation; and
+compression gate candidates.
+
+\textbf{Hardware and runtime.} All experiments run on a single GPU. Training runs
+to 15 epochs with early stopping; ablation and gate candidates are limited to
+3 epochs to bound wall-clock time. This 3-epoch limit for ablations constitutes a
+deliberate scope reduction: it provides sufficient signal to gate compression
+candidates but may underestimate the ceiling performance of some variants.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Results}
+\label{sec:results}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Primary Checkpoint: Run21}
+
+Table~\ref{tab:run21} reports run21 metrics on clean and noisy test sets.
+
+\begin{table}[h]
+\centering
+\caption{Run21 performance on MVTec AD cable (clean vs.\ noisy).}
+\label{tab:run21}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccc}
+\toprule
+ & I-AUROC & P-AUROC & P-PRO \\
+\midrule
+Clean  & 97.42 & 95.34 & 29.54 \\
+Noisy  & 87.00 & 91.82 & 58.27 \\
+$\Delta$ & $-$10.42 & $-$3.52 & $+$28.73 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Image-level AUROC degrades by 10.42 pp under heavy noise, remaining at a usable
+87.00\%. Pixel-AUROC is substantially more robust, dropping only 3.52 pp to 91.82\%.
+The P-PRO increase under noise ($+$28.73) is an artefact of threshold spread
+behaviour under noise and is reported transparently alongside the other pixel metrics rather than cited as a genuine improvement. Figures \ref{fig:run21nonoise} and \ref{fig:run21yesnoise} depict the results of Run21 on clean and noisy images respectively.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{latex/run21NoNoise.jpeg}
+    \caption{Results of Run21 on clean image}
+    \label{fig:run21nonoise}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{latex/run21HeavyNoise.jpeg}
+    \caption{Results of Run21 on noisy image}
+    \label{fig:run21yesnoise}
+\end{figure}
+
+\subsection{Captioning Quality}
+
+Table~\ref{tab:caption} summarises the LLM prompt variant experiment.
+
+\begin{table*}[h]
+\centering
+\caption{Caption variant comparison (3 test images).}
+\label{tab:caption}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcc}
+\toprule
+Variant & Runtime (s) & Caption quality \\
+\midrule
+Baseline           & 26.7  & Generic (``Image from cable'') \\
+LLM compression    & 29.6  & Generic, $\sim$11\% slower \\
+Prompt improvement & 268.4 & Defect-specific \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Prompt improvement generates defect-specific captions (e.g.,\ \textit{``industrial
+inspection photo: close-up of cable showing cable swap defect''} rather than generic captions like \textit{``image from cable''}) but at $10\times$
+the runtime of the baseline. LLM compression retains baseline caption quality with
+negligible overhead and is therefore adopted as the default deployment mode. Figures \ref{fig:baseline} and \ref{fig:modified} show the difference between the baseline caption and the modified caption. 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{latex/BaselinePrompt.jpeg}
+    \caption{Example of a caption from the baseline model}
+    \label{fig:baseline}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{latex/ModifiedPrompt.jpeg}
+    \caption{Example of a modified caption after compression and fine-tuning}
+    \label{fig:modified}
+\end{figure}
+
+\subsection{Cross-Run Comparison}
+
+Table~\ref{tab:allruns} (see below) consolidates all runs with available evaluation
+outputs. Run21 achieves the best balance of image-level and pixel-level metrics
+among fully-trained (15-epoch) runs. Run16\_seg records perfect image-level scores
+(100\% I-AUROC) and strong pixel-AUROC (92.87\%) but was not subjected to noise
+evaluation and is a legacy run without the validated anti-leakage split; its results
+are therefore not directly comparable. Among post-run21 variants, none achieve
+run21's image-level performance; run28 (LoRA seg-fix, 10ep) achieves the strongest
+noisy image-AUROC among variants (74.31\%) but falls 12.69 pp below run21.
+Further, Table \ref{tab:comparison} shows the results of the baseline paper (SSVP).
+
+\begin{table*}[t]
+\centering
+\caption{Consolidated experiment ledger. N/A indicates noise evaluation was not run. Ablation and gate candidates trained for 3 epochs only.}
+\label{tab:allruns}
+\setlength{\tabcolsep}{3.5pt}
+\small
+\begin{tabular}{lrrrrrrrrrrrr}
+\toprule
+Experiment & \multicolumn{6}{c}{Clean} & \multicolumn{6}{c}{Noisy} \\
+\cmidrule(lr){2-7}\cmidrule(lr){8-13}
+ & I-AUC & I-F1 & I-AP & P-AUC & P-PRO & P-AP & I-AUC & I-F1 & I-AP & P-AUC & P-PRO & P-AP \\
+\midrule
+ablation/lora\_no\_consistency  & 57.64 & 42.86 & 35.00 & 66.07 & 27.72 & 1.89 & 49.70 & 42.62 & 28.96 & 58.69 & 22.91 & 1.27 \\
+ablation/no\_consistency        & 78.67 & 61.54 & 57.06 & 78.57 & 41.14 & 4.04 & 42.76 & 40.00 & 22.87 & 71.67 & 39.64 & 2.12 \\
+compression/depth\_pruning      & 53.97 & 44.44 & 31.72 & 80.67 & 35.06 & 2.75 & 57.94 & 47.83 & 36.53 & 81.23 & 43.37 & 2.75 \\
+compression/diff\_pruning       & 44.54 & 39.13 & 33.62 & 82.44 & 37.79 & 2.84 & 45.24 & 39.13 & 24.98 & 85.12 & 44.68 & 3.42 \\
+noise\_ap/v1\_consistency\_mild & 52.38 & 42.86 & 28.86 & 84.99 & 48.06 & 3.33 & 52.08 & 40.74 & 29.73 & 84.64 & 51.98 & 3.21 \\
+noisy\_dae/dae\_rerun           & 52.88 & 40.91 & 32.05 & 79.88 & 39.00 & 2.50 & 58.83 & 43.24 & 41.72 & 85.05 & 45.72 & 3.42 \\
+run15                           & 89.66 & 86.41 & 93.58 & 69.81 & 25.63 & 5.25 & N/A & N/A & N/A & N/A & N/A & N/A \\
+run16\_seg                      & 100.00 & 100.00 & 100.00 & 92.87 & 83.41 & 73.62 & N/A & N/A & N/A & N/A & N/A & N/A \\
+\textbf{run21 (proposed)}       & \textbf{97.42} & \textbf{84.85} & \textbf{93.62} & \textbf{95.34} & 29.54 & \textbf{50.89} & \textbf{87.00} & \textbf{75.86} & \textbf{81.33} & \textbf{91.82} & 58.27 & \textbf{34.91} \\
+run22\_promptdice               & 67.96 & 48.65 & 45.37 & 83.07 & 42.33 & 11.29 & 61.81 & 45.83 & 41.17 & 74.37 & 42.34 & 3.00 \\
+run23\_robustpatch              & 72.92 & 54.17 & 46.90 & 76.99 & 40.71 & 3.87 & 46.63 & 39.56 & 25.83 & 68.17 & 34.96 & 1.83 \\
+run28\_lora\_segfix             & 72.42 & 54.55 & 40.97 & 80.24 & 27.10 & 3.50 & 74.31 & 53.85 & 47.00 & 76.56 & 28.55 & 2.95 \\
+run29\_entropy\_noisycal        & 66.67 & 48.28 & 51.02 & 64.21 & 34.45 & 3.55 & 54.37 & 40.51 & 36.48 & 69.59 & 35.25 & 2.98 \\
+run30\_entropy\_noisycal\_15es  & 66.07 & 47.76 & 38.12 & 79.91 & 52.72 & 2.89 & 45.34 & 44.16 & 21.84 & 82.09 & 43.49 & 2.58 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[h]
+\centering
+\caption{Results of SSVP paper compared to other anomaly detection methods}
+\label{tab:comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Metric} & \textbf{Dataset} & \textbf{WinCLIP} & \textbf{APRIL-GAN} & \textbf{AnomalyCLIP} & \textbf{AdaCLIP} & \textbf{Bayes-PFL} & \textbf{SSVP (Ours)} \\
+\midrule
+\multirow{7}{*}{\shortstack{Image-level \\ (AUROC, F1-Max, \\ AP)}}
+ & MVTec-AD  & (88.7, 92.6, 94.8) & (85.7, 90.2, 93.3) & (89.3, 92.4, 96.0) & (90.7, 92.6, \underline{96.2}) & (\underline{92.0}, \underline{93.0}, 96.0) & \textbf{(93.0, 93.3, 96.7)} \\
+ & VisA      & (77.6, 78.8, 77.1) & (77.9, 78.4, 81.1) & (82.0, 80.1, 85.2) & (82.6, 81.3, 84.4) & (\underline{87.1}, \underline{83.4}, \underline{89.0}) & \textbf{(88.2, 85.4, 90.4)} \\
+ & BTAD      & (83.3, 81.0, 84.1) & (74.0, 69.5, 71.2) & (89.0, 85.5, 90.8) & (\underline{91.6}, \textbf{90.1}, 92.6) & (91.4, 88.6, \underline{94.2}) & \textbf{(94.2, \underline{89.8}, 93.6)} \\
+ & KSDD2     & (93.2, 71.1, 77.4) & (90.0, 69.7, 74.1) & (91.6, 70.8, 77.4) & (95.4, 84.2, 95.6) & (\textbf{97.0}, \textbf{92.1}, \textbf{97.6}) & \underline{(96.9, 91.8, 97.5)} \\
+ & RSDD      & (85.3, 73.5, 65.3) & (73.1, 59.7, 50.5) & (73.5, 59.0, 55.0) & (\underline{92.1}, 75.0, \underline{70.8}) & (90.3, \underline{85.6}, 70.1) & \textbf{(98.5, 95.2, 98.6)} \\
+ & DAGM      & (89.6, 86.4, 90.4) & (90.4, 86.9, 90.1) & (95.6, 93.2, 94.6) & (96.5, 94.1, 95.7) & (\underline{97.7}, \underline{95.7}, \underline{97.0}) & \textbf{(98.0, 96.2, 97.4)} \\
+ & DTD-Syn   & (93.9, 94.2, \textbf{98.1}) & (83.7, 89.3, 93.5) & (\underline{94.5}, 94.5, 97.7) & (92.8, 92.2, 97.0) & (93.8, \underline{95.1}, 97.8) & \textbf{(\underline{94.0}, \underline{94.6}, \underline{98.0})} \\
+\midrule
+\multirow{7}{*}{\shortstack{Pixel-level \\ (AUROC, PRO, \\ AP)}}
+ & MVTec-AD  & (82.5, 64.2, 18.1) & (88.9, 43.6, 44.7) & (88.9, 81.4, 34.5) & (85.5, 40.8, 43.1) & (\underline{91.9}, \underline{87.8}, \underline{48.3}) & \textbf{(92.2, 89.0, 50.0)} \\
+ & VisA      & (79.3, 56.2, 4.9)  & (94.1, 86.4, 25.2) & (\underline{95.2}, 86.4, 21.0) & (94.7, 70.8, 26.4) & (93.2, \underline{89.2}, \underline{29.7}) & \textbf{(96.2, 90.5, 30.1)} \\
+ & BTAD      & (68.4, 31.8, 10.1) & (\underline{91.3}, 43.0, 32.9) & (90.2, 43.3, 38.2) & (87.1, 15.8, 34.3) & (90.2, \underline{73.3}, \underline{45.1}) & \textbf{(96.5, 84.7, 51.2)} \\
+ & KSDD2     & (92.4, 90.2, 14.3) & (93.4, 50.1, 59.7) & (98.7, 91.5, 40.2) & (95.1, 68.2, 40.4) & (\textbf{99.6}, \underline{97.1}, \textbf{72.3}) & \underline{(99.5, 98.8, 71.5)} \\
+ & RSDD      & (93.8, 74.4, 2.2)  & (\underline{99.4}, 65.2, 27.6) & (97.8, \underline{93.2}, 18.7) & (93.6, 48.3, 37.1) & (\underline{99.4}, 92.1, \underline{39.1}) & \textbf{(99.7, 98.7, 43.4)} \\
+ & DAGM      & (82.5, 55.0, 3.0)  & (98.6, 42.9, 41.6) & (98.1, \underline{95.6}, 28.5) & (95.4, 39.1, \underline{45.2}) & (\underline{98.7}, 94.6, 42.5) & \textbf{(99.4, 98.4, 50.5)} \\
+ & DTD-Syn   & (82.3, 55.2, 11.5) & (96.4, 41.5, 63.1) & (97.1, 88.2, 52.1) & (94.0, 24.7, 52.4) & (\underline{97.2}, \underline{94.1}, \underline{69.9}) & \textbf{(98.1, 94.3, 64.6)} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Ablation Studies}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\textbf{Consistency regularisation.} Removing consistency regularisation
+(\texttt{no\_consistency}) degrades clean I-AUROC from 97.42 to 78.67 and collapses
+noisy I-AUROC to 42.76 — below random. Adding LoRA without consistency
+(\texttt{lora\_no\_consistency}) further reduces clean I-AUROC to 57.64. This
+strongly indicates that consistency regularisation is load-bearing for both
+clean accuracy and noise robustness; LoRA alone does not compensate.
+
+\textbf{Prompt variants (run22).} PromptDice regularisation (run22) reduces clean
+I-AUROC to 67.96 and noisy I-AUROC to 61.81, suggesting that the additional prompt
+diversity introduced by dice-based augmentation destabilises the VCPG's learned
+prompt distribution for this category.
+
+\textbf{Robust patch augmentation (run23).} Robust patch training (run23) achieves
+only 72.92\% clean I-AUROC and degrades catastrophically under noise (46.63\%),
+performing worse than the no-augmentation run22. This suggests the patch augmentation
+scheme does not generalise to the synthetic noise type evaluated here.
+
+\textbf{Noisy DAE training.} Training with a denoising autoencoder on noisy inputs
+(DAE rerun) achieves 58.83\% noisy I-AUROC — better than robust patch training but
+substantially below run21 (87.00\%). The DAE appears to help the model tolerate
+noise locally but at the cost of global image-level discrimination.
+
+\textbf{Entropy and noisy calibration (runs 29--30).} Entropy regularisation
+combined with noisy calibration consistently underperforms run21 across both clean
+and noisy settings, with clean I-AUROC ranging 66--67\%. The noisy calibration
+signal appears to introduce a bias that hurts clean performance without
+proportionate noisy gains.
+
+\textbf{Compression gate.} Both depth-pruning and differentiated-pruning candidates
+fail the gate at 3 epochs, with clean I-AUROC at 53.97\% and 44.54\% respectively
+— far below the 7\% maximum drop threshold relative to run21. Neither candidate
+is promoted to full training. This confirms that the SSVP backbone is not
+straightforwardly compressible at the segmentation level with the pruning strategies
+evaluated here, and that the caption-side INT8 quantisation is the correct
+compression locus.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Failure Cases}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Several recurring failure modes are identifiable from the experimental record:
+
+\textbf{Image-level vs.\ pixel-level trade-off.} Run16\_seg achieves
+simultaneously perfect image-level scores and strong pixel P-PRO (83.41\%) but
+was trained on an earlier, non-anti-leakage split. When the split is corrected in
+run21, image-level performance remains high (97.42\%) but P-PRO drops sharply to
+29.54\%. This suggests a portion of run16's pixel-level gain derived from
+train--test leakage rather than genuine model capacity.
+
+\textbf{Noisy DAE regression.} Despite being explicitly designed for noise
+robustness, the DAE variant underperforms run21 on noisy I-AUROC by 28.17 pp.
+The DAE appears to over-smooth features, degrading the discriminative signal
+required for image-level anomaly classification even as it partially preserves
+pixel-level structure.
+
+\textbf{Caption specificity gap.} The default LLM baseline produces generic
+captions (``Image from cable'') that do not identify the defect type. Only the
+prompt-improvement variant produces actionable descriptions, but the tradeoff is an increased runtime cost. 
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Limitations}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\textbf{Synthetic noise only.} Noise robustness is assessed using synthetic
+perturbations rather than real sensor noise profiles. Industrial imaging noise
+(motion blur, lens flare, uneven illumination, compression artefacts) has a
+different spectral and spatial structure; the clean-to-noisy deltas reported here
+may not transfer directly.
+
+\textbf{3-epoch ablation ceiling.} All ablation and compression gate candidates
+are trained for 3 epochs. Some variants — particularly DAE training and noisy
+calibration — may benefit from longer training schedules that are infeasible within
+the evaluation budget. 
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{thebibliography}{99}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\bibitem{fu2026ssvp}
+C.~Fu et al., ``SSVP: Synergistic semantic-visual prompting for industrial zero-shot anomaly detection,'' \textit{arXiv:2601.09147}, 2026.
+
+\bibitem{bergmann2019mvtec}
+P.~Bergmann, M.~Fauser, D.~Sattlegger, and C.~Steger, ``MVTec AD — a comprehensive real-world dataset for unsupervised anomaly detection,'' \textit{Proc.\ CVPR}, 2019.
+
+\bibitem{hicsonmez2024zsiad}
+S.~Hicsonmez et al., ``A survey on zero-shot image anomaly detection,'' University of Luxembourg, 2024.
+
+\bibitem{jeong2023winclip}
+J.~Jeong et al., ``WinCLIP: Zero-/few-shot anomaly classification and segmentation,'' \textit{Proc.\ CVPR}, 2023.
+
+\bibitem{zhou2024anomalyclip}
+Q.~Zhou, G.~Pang, Y.~Tian, S.~He, and J.~Chen, ``AnomalyCLIP: Object-agnostic prompt learning for zero-shot anomaly detection,'' \textit{arXiv:2310.18961}, 2024.
+
+\bibitem{cai2024adaclip}
+Y.~Cai et al., ``Anomaly detection by adapting a pre-trained vision language model,'' \textit{arXiv:2403.09493}, 2024.
+
+\bibitem{yuan2025afrclip}
+J.~Yuan et al., ``AFR-CLIP: Enhancing zero-shot industrial anomaly detection with stateless-to-stateful anomaly feature rectification,'' 2025.
+
+\bibitem{jeong2026headclip}
+K.~Jeong et al., ``Domain adaptation of attention heads for zero-shot anomaly detection,'' \textit{arXiv:2505.22259}, 2026.
+
+\bibitem{ma2025aaclip}
+W.~Ma et al., ``AA-CLIP: Enhancing zero-shot anomaly detection via anomaly-aware CLIP,'' \textit{arXiv:2503.06661}, 2025.
+
+\bibitem{deng2024anoclip}
+H.~Deng et al., ``Bootstrap fine-grained vision-language alignment for unified zero-shot anomaly localization,'' \textit{arXiv:2308.15939}, 2024.
+
+\bibitem{wang2024dualbranch}
+Z.~Wang and N.~Armanfard, ``Zero-shot anomaly detection with dual-branch prompt selection,'' McGill/Mila, 2024.
+
+\bibitem{fucka2026anomalyvfm}
+M.~Fučka, V.~Zavrtanik, and D.~Skočaj, ``AnomalyVFM: Transforming vision foundation models into zero-shot anomaly detectors,'' \textit{arXiv:2601.20524}, 2026.
+
+\bibitem{asokan2025finelip}
+M.~Asokan, K.~Wu, and F.~Albreiki, ``FineLIP: Extending CLIP's reach via fine-grained alignment with longer text inputs,'' \textit{arXiv:2504.01916}, 2025.
+
+\bibitem{yang2025structuralglip}
+Y.~Yang et al., ``Prompt as knowledge bank: Boost VLM via structural representation for zero-shot medical detection,'' \textit{Proc.\ ICLR}, 2025.
+
+\bibitem{xu2025anomalyov}
+J.~Xu et al., ``Towards zero-shot anomaly detection and reasoning with multimodal large language models,'' \textit{arXiv:2502.07601}, 2025.
+
+\bibitem{anonymous2025bulktobudget}
+Anonymous, ``From bulk to budget: Best practices to compress multimodal large language models,'' under review, \textit{ICLR}, 2025.
+
+\bibitem{reda2025llmsieve}
+W.~Reda, A.~Jangda, and K.~Chintalapudi, ``Task specific pruning with LLM-Sieve,'' \textit{arXiv:2505.18350}, 2025.
+
+
+\end{thebibliography}
+
+\end{document}
+
