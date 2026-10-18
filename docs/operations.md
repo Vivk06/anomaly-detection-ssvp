@@ -54,7 +54,7 @@ The demo exposes image and pixel thresholds through `--help`. Caption text trans
 
 ## Baselines and reports
 
-The WinCLIP wrapper accepts a dataset root and writes per-image scores into a runtime output directory. Its source is vendored under [third_party](../third_party/); check [THIRD_PARTY.md](../THIRD_PARTY.md) for upstream dependency notes. The AnomalyCLIP wrapper currently contains simulated placeholder metrics in its source and must not be used to produce a new result table. The committed AnomalyCLIP results came from the source experiment summary.
+The WinCLIP wrapper accepts a dataset root and writes per-image scores into a runtime output directory. Its source is vendored under [third_party](../third_party/); check [THIRD_PARTY.md](../THIRD_PARTY.md) for upstream dependency notes. The simulated AnomalyCLIP wrapper was removed. The committed AnomalyCLIP results came from the source experiment summary; the vendored source remains under [third_party](../third_party/).
 
 ```bash
 CUDA_VISIBLE_DEVICES="" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 .venv/bin/python -m scripts.baselines.winclip_eval --mvtec-root "<mvtec_root>" --out-root "<output_dir>"

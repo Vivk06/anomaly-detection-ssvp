@@ -31,7 +31,6 @@ The smoke suite runs with CPU dummy tensors. Supply your own MVTec AD root and c
 | ssvp | Cable 70/20/10 resplit, 15 epochs | clean | 97.42 | 95.34 | 29.54 |
 | ssvp | Cable 70/20/10 resplit, 15 epochs | noisy | 87.00 | 91.82 | 58.27 |
 | anomalyclip | AnomalyCLIP cable | clean | 61.3 | 86.1 | 64.7 |
-| winclip | WinCLIP summary cable | clean | 44.64 | 49.43 | 29.41 |
 <!-- results:end -->
 
-The table is generated from [metrics.csv](results/metrics.csv) and [captions.csv](results/captions.csv) by [render_tables.py](scripts/reporting/render_tables.py). It transcribes source results; it does not rerun experiments. Full tables are in [results/tables](results/tables/).
+The table is generated from [metrics.csv](results/metrics.csv) and [captions.csv](results/captions.csv) by [render_tables.py](scripts/reporting/render_tables.py). It transcribes source results; it does not rerun experiments. Full tables are in [results/tables](results/tables/); the [separate WinCLIP source summary](results/tables/winclip_summary.md) is excluded from the selected comparison.

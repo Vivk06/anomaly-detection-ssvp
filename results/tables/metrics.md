@@ -50,14 +50,14 @@
 | anomalyclip_d2_transistor | AnomalyCLIP transistor | anomalyclip | accepted | clean | transistor |  | none | 88.2 |  | 71.7 | 70.7 | 63.4 |  |
 | anomalyclip_d2_capsule | AnomalyCLIP capsule | anomalyclip | accepted | clean | capsule |  | none | 86.4 |  | 79.3 | 98.9 | 94.0 |  |
 | anomalyclip_d2_mean | AnomalyCLIP three-category mean | anomalyclip | accepted | clean | cable;transistor;capsule |  | none | 78.6 |  |  | 85.2 | 74.0 |  |
-| winclip_summary_cable | WinCLIP summary cable | winclip | exploratory | clean | cable |  | none | 44.64 | 76.35 | 56.97 | 49.43 | 29.41 | 3.02 |
-| winclip_summary_transistor | WinCLIP summary transistor | winclip | exploratory | clean | transistor |  | none | 71.71 | 67.39 | 56.0 | 71.0 | 0.0 | 12.47 |
-| winclip_summary_capsule | WinCLIP summary capsule | winclip | exploratory | clean | capsule |  | none | 54.33 | 90.46 | 85.42 | 84.39 | 0.0 | 5.76 |
-| winclip_summary_mean | WinCLIP summary mean | winclip | exploratory | clean | cable;transistor;capsule |  | none | 56.89 | 78.07 | 66.13 | 68.27 | 9.8 | 7.08 |
-| winclip_summary_cable | WinCLIP summary cable | winclip | exploratory | noisy | cable |  | winclip_gauss020 | 46.42 | 76.03 | 63.84 | 45.82 | 28.18 | 2.88 |
-| winclip_summary_transistor | WinCLIP summary transistor | winclip | exploratory | noisy | transistor |  | winclip_gauss020 | 42.42 | 57.55 | 41.46 | 62.48 | 0.0 | 10.94 |
-| winclip_summary_capsule | WinCLIP summary capsule | winclip | exploratory | noisy | capsule |  | winclip_gauss020 | 56.48 | 90.83 | 87.64 | 76.13 | 0.0 | 5.31 |
-| winclip_summary_mean | WinCLIP summary mean | winclip | exploratory | noisy | cable;transistor;capsule |  | winclip_gauss020 | 48.44 | 74.8 | 64.31 | 61.48 | 9.39 | 6.38 |
+| winclip_summary_cable | WinCLIP separate source summary cable | winclip | exploratory | clean | cable |  | none | 44.64 | 76.35 | 56.97 | 49.43 | 29.41 | 3.02 |
+| winclip_summary_transistor | WinCLIP separate source summary transistor | winclip | exploratory | clean | transistor |  | none | 71.71 | 67.39 | 56.0 | 71.0 | 0.0 | 12.47 |
+| winclip_summary_capsule | WinCLIP separate source summary capsule | winclip | exploratory | clean | capsule |  | none | 54.33 | 90.46 | 85.42 | 84.39 | 0.0 | 5.76 |
+| winclip_summary_mean | WinCLIP separate source summary mean | winclip | exploratory | clean | cable;transistor;capsule |  | none | 56.89 | 78.07 | 66.13 | 68.27 | 9.8 | 7.08 |
+| winclip_summary_cable | WinCLIP separate source summary cable | winclip | exploratory | noisy | cable |  | winclip_gauss020 | 46.42 | 76.03 | 63.84 | 45.82 | 28.18 | 2.88 |
+| winclip_summary_transistor | WinCLIP separate source summary transistor | winclip | exploratory | noisy | transistor |  | winclip_gauss020 | 42.42 | 57.55 | 41.46 | 62.48 | 0.0 | 10.94 |
+| winclip_summary_capsule | WinCLIP separate source summary capsule | winclip | exploratory | noisy | capsule |  | winclip_gauss020 | 56.48 | 90.83 | 87.64 | 76.13 | 0.0 | 5.31 |
+| winclip_summary_mean | WinCLIP separate source summary mean | winclip | exploratory | noisy | cable;transistor;capsule |  | winclip_gauss020 | 48.44 | 74.8 | 64.31 | 61.48 | 9.39 | 6.38 |
 | run22_caption_compare_cable | Run22 caption comparison cable | ssvp | exploratory | clean | cable |  | none | 77.57936507936508 | 61.53846104142012 | 53.780314855937384 | 94.73455385869288 | 81.42378184136139 | 42.90750283463433 |
 | run22_caption_compare_transistor | Run22 caption comparison transistor | ssvp | exploratory | clean | transistor |  | none | 73.14814814814814 | 66.66666622222223 | 60.11705685618729 | 91.49088375411755 | 79.90403674974738 | 46.910849986749994 |
 | run22_caption_compare_capsule | Run22 caption comparison capsule | ssvp | exploratory | clean | capsule |  | none | 95.66666666666667 | 86.95652124007563 | 93.88528138528139 | 97.88630522301285 | 86.65451514659857 | 40.34364081527094 |

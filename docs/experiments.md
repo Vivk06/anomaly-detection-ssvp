@@ -10,7 +10,7 @@ The heavy-noise evaluator applies Gaussian noise, blur, salt-and-pepper corrupti
 
 ## Baselines and transfer
 
-The metric table includes WinCLIP category rows at the reported resolutions, the separate WinCLIP summary source, AnomalyCLIP category rows, and a cable-trained SSVP cross-category test on transistor. The transfer result shows that the cable-trained checkpoint did not carry the same image-level quality to transistor. The dated source summary reported later AnomalyCLIP pixel metrics and WinCLIP resolution updates; those values are represented as rows rather than copied into this prose.
+The full metric table includes WinCLIP category rows at the reported resolutions, [the separate WinCLIP source summary](../results/tables/winclip_summary.md), AnomalyCLIP category rows, and a cable-trained SSVP cross-category test on transistor. The README selected comparison excludes the separate WinCLIP summary. The transfer result shows that the cable-trained checkpoint did not carry the same image-level quality to transistor. The dated source summary reported later AnomalyCLIP pixel metrics and WinCLIP resolution updates; those values are represented as rows rather than copied into this prose.
 
 WinCLIP's cable image AUROC and pixel PRO deserve care. The summary files and the dated resolution runs disagree in some fields. We preserved each source as a distinct row, and [results/README.md](../results/README.md) records the provenance issue. No baseline was rerun for this repository cleanup.
 

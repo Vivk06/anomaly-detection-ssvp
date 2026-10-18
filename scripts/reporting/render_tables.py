@@ -29,7 +29,7 @@ def render():
 
     selected = [row for row in metrics if
         row["run_id"] == "run21_resplit_15es" or
-        (row["run_id"] in {"anomalyclip_d2_cable", "winclip_summary_cable"} and row["eval"] == "clean")]
+        (row["run_id"] == "anomalyclip_d2_cable" and row["eval"] == "clean")]
     summary = "## Selected results\n\n" + table(
         ["Model", "Title", "Eval", "Image AUROC", "Pixel AUROC", "Pixel PRO"],
         [[row[key] for key in ("model", "title", "eval", "image_auroc", "pixel_auroc", "pixel_pro")] for row in selected],
@@ -40,6 +40,12 @@ def render():
         [[row[key] for key in ("run_id", "title", "model", "status", "eval", "categories", "resolution", "noise_protocol", "image_auroc", "image_f1_max", "image_ap", "pixel_auroc", "pixel_pro", "pixel_ap")] for row in metrics],
     )
     (tables / "metrics.md").write_text(metric_table, encoding="utf-8")
+    separate_winclip = [row for row in metrics if row["run_id"].startswith("winclip_summary_")]
+    winclip_table = "# WinCLIP separate source summary (provenance unresolved)\n\n" + table(
+        ["Run ID", "Title", "Eval", "Categories", "Noise", "I-AUROC", "P-AUROC", "P-PRO"],
+        [[row[key] for key in ("run_id", "title", "eval", "categories", "noise_protocol", "image_auroc", "pixel_auroc", "pixel_pro")] for row in separate_winclip],
+    )
+    (tables / "winclip_summary.md").write_text(winclip_table, encoding="utf-8")
     caption_table = "# Caption evaluations\n\n" + table(
         ["Eval ID", "Title", "Variant", "Split", "Images", "BERTScore F1", "Notes"],
         [[row[key] for key in ("eval_id", "title", "variant", "split", "n_images", "bertscore_f1", "notes")] for row in captions],

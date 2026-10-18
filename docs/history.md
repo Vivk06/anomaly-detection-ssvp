@@ -16,7 +16,7 @@ This tree was built from SSVP_Extension@b14a5e4. The source already contained an
 | train_run22.py | `scripts/pipelines/run22_caption_compare.py` |
 | live_demo_noisy_folder.py | `scripts/demo/demo_folder.py` |
 | winclip_eval.py | `scripts/baselines/winclip_eval.py` |
-| run_anomalyclip_baseline.py | `scripts/baselines/anomalyclip_eval.py` |
+| run_anomalyclip_baseline.py | Removed: the wrapper emitted simulated metrics. |
 | generate_reports.py | `scripts/reporting/generate_reports.py` |
 | aggregate_run22_results.py | `scripts/reporting/aggregate_run22_results.py` |
 

@@ -51,3 +51,8 @@ def test_table_renderer_is_idempotent_without_touching_repo(tmp_path):
     assert first == {path: (tmp_path / path).read_bytes() for path in first}
     readme = (tmp_path / "README.md").read_text()
     assert (tmp_path / "results/tables/summary.md").read_text() in readme
+    headline = (tmp_path / "results/tables/summary.md").read_text()
+    separate = (tmp_path / "results/tables/winclip_summary.md").read_text()
+    assert "winclip |" not in headline
+    assert "WinCLIP separate source summary (provenance unresolved)" in separate
+    assert separate.count("| winclip_summary_") == 8
