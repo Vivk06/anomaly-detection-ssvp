@@ -9,8 +9,8 @@ Training protocol:
     - Cosine annealing scheduler with warmup
 
 Usage:
-    python 03_code/scripts/train.py --config 03_code/configs/default.yaml
-    python 03_code/scripts/train.py --config 03_code/configs/default.yaml --data_root 04_data/datasets/cable_resplit
+    python scripts/pipelines/train.py --config configs/default.yaml
+    python scripts/pipelines/train.py --config configs/default.yaml --data_root <mvtec_root>
 """
 
 import os
@@ -27,14 +27,13 @@ from torch.cuda.amp import autocast, GradScaler
 from tqdm import tqdm
 from sklearn.metrics import precision_recall_curve
 
-from path_utils import LOGS_DIR, default_config_path, ensure_import_paths
+from ssvp_rc.paths import LOGS_DIR, default_config_path
 
-ensure_import_paths()
 
-from models.ssvp import SSVP
-from models.losses import SSVPLoss
-from data.mvtec import get_mvtec_train_val_dataloaders
-from utils import load_config, set_seed, postprocess_anomaly_map, visualize_results, denormalize_image
+from ssvp_rc.models.ssvp import SSVP
+from ssvp_rc.models.losses import SSVPLoss
+from ssvp_rc.data.mvtec import get_mvtec_train_val_dataloaders
+from ssvp_rc.utils import load_config, set_seed, postprocess_anomaly_map, visualize_results, denormalize_image
 
 
 def _perturb_for_consistency(images, noise_std=0.04):
@@ -685,7 +684,7 @@ def main():
     print(f"Training samples: {len(train_loader.dataset)}")
     print(f"Validation samples (from train split): {len(val_loader.dataset)}")
 
-    from data.mvtec import log_dataset_statistics
+    from ssvp_rc.data.mvtec import log_dataset_statistics
     train_stats = log_dataset_statistics(train_loader.dataset, "Train Split")
     val_stats = log_dataset_statistics(val_loader.dataset, "Validation Split")
 

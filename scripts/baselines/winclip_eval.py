@@ -5,19 +5,15 @@ import logging
 import csv
 import numpy as np
 import torch
+from ssvp_rc.paths import DATASETS_DIR, OUTPUTS_DIR
 
-# add WinCLIP repo to path
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'external', 'WinCLIP'))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-
-from datasets import get_dataloader_from_args
-from datasets import dataset_classes
-from datasets import denormalization
-from utils.eval_utils import specify_resolution
-from utils.metrics import metric_cal
-from WinCLIP.model import WinClipAD
-from utils.training_utils import setup_seed
+from third_party.winclip.datasets import get_dataloader_from_args
+from third_party.winclip.datasets import dataset_classes
+from third_party.winclip.datasets import denormalization
+from third_party.winclip.utils.eval_utils import specify_resolution
+from third_party.winclip.utils.metrics import metric_cal
+from third_party.winclip.WinCLIP.model import WinClipAD
+from third_party.winclip.utils.training_utils import setup_seed
 
 
 def ensure_category_has_defects(mvtec_dir, category):
@@ -48,7 +44,7 @@ def add_gaussian_noise(batch, noise_std, noise_p):
 
 def run_category(category, mvtec_dir, out_root, device, batch_size=32, noise_std=0.0, noise_p=0.0):
     # configure dataset path used by WinCLIP
-    import datasets.mvtec as mvtec_mod
+    import third_party.winclip.datasets.mvtec as mvtec_mod
 
     # handle cases where dataset layout is either <mvtec-root>/<category>/(test|train)
     # or <mvtec-root>/<category>/<category>/(test|train)
@@ -149,8 +145,8 @@ def run_category(category, mvtec_dir, out_root, device, batch_size=32, noise_std
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mvtec-root', type=str, default=os.path.join('ssvp', '04_data', 'datasets', 'mvtec'))
-    parser.add_argument('--out-root', type=str, default=os.path.join('results', 'winclip'))
+    parser.add_argument('--mvtec-root', type=str, default=str(DATASETS_DIR))
+    parser.add_argument('--out-root', type=str, default=str(OUTPUTS_DIR / 'winclip'))
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--categories', nargs='+', default=['cable', 'transistor', 'capsule'])
     parser.add_argument('--noise-std', type=float, default=0.0)

@@ -18,16 +18,17 @@ import torch
 import numpy as np
 from PIL import Image
 
-from path_utils import default_config_path, ensure_import_paths
+from ssvp_rc.paths import default_config_path
 
-ensure_import_paths()
 
-from data.mvtec import MVTecDataset
-from run_full_pipeline import generate_captions
-from caption_utils import _build_caption_target, _mask_to_spatial_location
-from utils import load_config, set_seed
-from utils import postprocess_anomaly_map, compute_image_level_metrics
-from models.ssvp import SSVP
+from ssvp_rc.data.mvtec import MVTecDataset
+from runpy import run_path
+from ssvp_rc.paths import SCRIPTS_DIR
+generate_captions = run_path(str(SCRIPTS_DIR / "pipelines" / "full_pipeline.py"))["generate_captions"]
+from ssvp_rc.captioning import _build_caption_target, _mask_to_spatial_location
+from ssvp_rc.utils import load_config, set_seed
+from ssvp_rc.utils import postprocess_anomaly_map, compute_image_level_metrics
+from ssvp_rc.models.ssvp import SSVP
 from transformers import pipeline
 import re
 

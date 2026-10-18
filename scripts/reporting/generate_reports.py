@@ -1,15 +1,16 @@
 """Aggregate outputs from training, WINCLIP, and caption comparison into markdown reports.
 
 Produces:
-  - runs/run22_caption_compare/run22_training_summary.md
-  - runs/run22_caption_compare/winclip_vs_model.md
-  - runs/run22_caption_compare/caption_comparison.md
-  - runs/run22_caption_compare/changes_from_run21.md
+  - outputs/run22_caption_compare/run22_training_summary.md
+  - outputs/run22_caption_compare/winclip_vs_model.md
+  - outputs/run22_caption_compare/caption_comparison.md
+  - outputs/run22_caption_compare/changes_from_run21.md
 """
 import argparse
 import json
 import os
 from pathlib import Path
+from ssvp_rc.paths import OUTPUTS_DIR
 
 
 def write_training_summary(root, out_path):
@@ -60,7 +61,7 @@ def write_caption_comparison(caption_outputs_dir, out_path):
         examples = sorted([p for p in by_img.iterdir() if p.is_dir()])[:10]
         for ex in examples:
             lines.append(f"\n## {ex.name}")
-            for fn in ["gt.txt", "model.txt", "anomalygpt.txt"]:
+            for fn in ["gt.txt", "model.txt", "rephrase_control.txt"]:
                 p = ex / fn
                 if p.exists():
                     txt = p.read_text(encoding="utf-8").strip()
@@ -74,7 +75,7 @@ def write_caption_comparison(caption_outputs_dir, out_path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--runs_root", default="runs/run22_caption_compare")
+    parser.add_argument("--runs_root", default=str(OUTPUTS_DIR / "run22_caption_compare"))
     args = parser.parse_args()
 
     root = Path(args.runs_root)

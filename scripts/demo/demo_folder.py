@@ -4,9 +4,9 @@ Run a live segmentation + captioning demo on noisy images from a user-specified 
 Default behavior uses run21 best model and enables caption text INT8 compression.
 
 Example:
-    python 03_code/scripts/live_demo_noisy_folder.py \
-            --input_folder 04_data/datasets/cable/test/combined \
-            --output_dir 05_results/ablations/live_demo_combined
+    python scripts/demo/demo_folder.py \
+            --input_folder data/samples/combined \
+            --output_dir <output_dir>
 """
 
 import argparse
@@ -17,14 +17,15 @@ import numpy as np
 import torch
 from PIL import Image
 
-from path_utils import LOGS_DIR, default_config_path, ensure_import_paths
+from ssvp_rc.paths import LOGS_DIR, default_config_path
 
-ensure_import_paths(include_scripts=True)
 
-from data.transforms import DualResizeTransform
-from models.ssvp import SSVP
-from run_full_pipeline import generate_captions
-from utils import load_config, postprocess_anomaly_map, set_seed, visualize_results
+from ssvp_rc.data.transforms import DualResizeTransform
+from ssvp_rc.models.ssvp import SSVP
+from runpy import run_path
+from ssvp_rc.paths import SCRIPTS_DIR
+generate_captions = run_path(str(SCRIPTS_DIR / "pipelines" / "full_pipeline.py"))["generate_captions"]
+from ssvp_rc.utils import load_config, postprocess_anomaly_map, set_seed, visualize_results
 
 
 VALID_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp"}
@@ -85,7 +86,7 @@ def load_model(config, checkpoint_path: Path, device: torch.device):
 def main():
     parser = argparse.ArgumentParser(description="Live demo for noisy-folder segmentation + captioning")
     parser.add_argument("--config", type=str, default=default_config_path())
-    parser.add_argument("--checkpoint", type=str, default=str(LOGS_DIR / "run21_resplit_15es" / "best_model.pth"))
+    parser.add_argument("--checkpoint", type=str, required=True)
     parser.add_argument("--input_folder", type=str, required=True,
                         help="Folder containing noisy input images")
     parser.add_argument("--output_dir", type=str, default=str(LOGS_DIR / "live_demo"))

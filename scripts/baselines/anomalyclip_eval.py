@@ -7,10 +7,10 @@ Prerequisites:
 
 Usage:
     python scripts/run_anomalyclip_baseline.py \
-        --anomalyclip_repo ../AnomalyCLIP \
-        --data_root 04_data/datasets/cable_resplit \
+        --anomalyclip_repo third_party/anomalyclip \
+        --data_root <mvtec_root> \
         --categories cable bottle leather \
-        --output_dir 05_results/baselines/anomalyclip
+        --output_dir <output_dir>
 """
 import argparse
 import json

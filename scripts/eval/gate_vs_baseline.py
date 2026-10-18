@@ -2,11 +2,11 @@
 Compare candidate run metrics against a baseline run with a max-drop tolerance gate.
 
 Usage:
-    python 03_code/scripts/compare_against_baseline.py \
-        --baseline_dir 05_results/ablations/run21_resplit_15es \
-        --candidate_dir 05_results/ablations/run31_distill_53m_15ep \
+    python scripts/eval/gate_vs_baseline.py \
+        --baseline_dir <output_dir> \
+        --candidate_dir <output_dir> \
     --max_drop 7.5 \
-        --report_path 05_results/ablations/run31_distill_53m_15ep/comparison_to_run21.json
+        --report_path <output_dir>
 """
 
 import argparse

@@ -5,7 +5,7 @@ This script creates per-variant temp configs, runs the full pipeline, and writes
 an aggregated summary for clean/noisy metrics and clean->noisy deltas.
 
 Usage:
-    python 03_code/scripts/run_ablation_matrix.py --config 03_code/configs/default.yaml --data_root 04_data/datasets/cable_resplit/cable --output_root 05_results/ablations/ablation_m1 --epochs 3
+    python scripts/pipelines/ablation_matrix.py --config configs/default.yaml --data_root <mvtec_root>/cable --output_root <output_dir> --epochs 3
 """
 
 import argparse
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import yaml
 
-from path_utils import (
+from ssvp_rc.paths import (
     ABLATION_JSON_DIR,
     ABLATIONS_DIR,
     SCRIPTS_DIR,
@@ -26,7 +26,7 @@ from path_utils import (
 )
 
 
-RUN_FULL_PIPELINE_SCRIPT = str(SCRIPTS_DIR / "run_full_pipeline.py")
+RUN_FULL_PIPELINE_SCRIPT = str(SCRIPTS_DIR / "pipelines" / "full_pipeline.py")
 
 
 def deep_update(dst, src):

@@ -1,6 +1,7 @@
 """Aggregate run22 training/eval outputs, WINCLIP placeholder, and caption reports into a single JSON and MD summary."""
 import json
 from pathlib import Path
+from ssvp_rc.paths import OUTPUTS_DIR, REPO_ROOT
 
 
 def _load_json(path: Path):
@@ -24,11 +25,11 @@ def _summarize_training_metrics(metrics_path: Path):
 
 
 def main():
-    out_root = Path("runs/run22_caption_compare")
+    out_root = OUTPUTS_DIR / "run22_caption_compare"
     out_root.mkdir(parents=True, exist_ok=True)
 
     winclip_metrics_path = out_root / "winclip" / "metrics.json"
-    caption_report_path = Path("DL_Project_refactor/05_results/caption_eval_full_predicted_det/caption_before_after_report.json")
+    caption_report_path = REPO_ROOT / "results/raw/captions/run22/caption_eval_full_predicted_det/caption_before_after_report.json"
 
     aggregate = {"training": {}, "model": {}, "winclip": None, "captions": None}
 

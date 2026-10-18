@@ -2,9 +2,9 @@
 Evaluate checkpoint robustness on heavily noised test images and compare to clean results.
 
 Usage:
-    python 03_code/scripts/evaluate_noise_robustness.py --config 03_code/configs/default.yaml --checkpoint 05_results/ablations/runX/best_model.pth \
-            --output_dir 05_results/ablations/runX/noise_eval --data_root 04_data/datasets/cable_resplit --categories cable \
-            --clean_results 05_results/ablations/runX/eval_results/results.json --calibration_file 05_results/ablations/runX/calibration_thresholds.json
+    python scripts/eval/eval_noisy.py --config configs/default.yaml --checkpoint <output_dir> \
+            --output_dir <output_dir> --data_root <mvtec_root> --categories cable \
+            --clean_results <output_dir> --calibration_file <output_dir>
 """
 
 import argparse
@@ -20,13 +20,12 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from torch.cuda.amp import autocast
 from tqdm import tqdm
 
-from path_utils import default_config_path, ensure_import_paths
+from ssvp_rc.paths import default_config_path
 
-ensure_import_paths()
 
-from data.mvtec import MVTEC_CATEGORIES, MVTecDataset
-from models.ssvp import SSVP
-from utils import (
+from ssvp_rc.data.mvtec import MVTEC_CATEGORIES, MVTecDataset
+from ssvp_rc.models.ssvp import SSVP
+from ssvp_rc.utils import (
     compute_image_level_metrics,
     compute_pixel_level_metrics,
     denormalize_image,

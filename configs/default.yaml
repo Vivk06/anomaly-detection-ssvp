@@ -100,7 +100,7 @@ training:
 # ── Data Settings ──
 data:
   dataset: "mvtec"
-  data_root: "./04_data/datasets/cable_resplit"
+  data_root: "./data/mvtec"
   img_size: 518                             # Backbone input size
   mask_size: 37                             # Feature grid size (H'×W')
   center_crop: false

@@ -2,14 +2,14 @@
 Prepare randomized 70:20:10 train/test/val splits for one or more MVTec categories.
 
 Input layout:
-        04_data/datasets/<category>/
+        <mvtec_root>/<category>/
             train/good/
             test/good/
             test/<defect_type>/
             ground_truth/<defect_type>/
 
 Some datasets in this repo use a nested wrapper directory, e.g.
-        04_data/datasets/transistor/transistor/
+        <mvtec_root>/transistor/transistor/
 
 Output layout:
         <output_root>/<category>/
@@ -29,7 +29,7 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
-from path_utils import DATASETS_DIR
+from ssvp_rc.paths import DATASETS_DIR
 
 
 IMG_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}

@@ -1,7 +1,7 @@
 """Orchestrate training for run22_caption_compare using existing run21 config.
 
 This wrapper creates a temporary config override (epochs=20, early_stopping disabled)
-and invokes the existing `run_full_pipeline.py` per-category. It copies checkpoints
+and invokes the existing `full_pipeline.py` per-category. It copies checkpoints
 to `best.pt` and `last.pt` and collects basic metrics.
 """
 import argparse
@@ -13,6 +13,7 @@ import yaml
 from pathlib import Path
 import shutil
 import json
+from ssvp_rc.paths import CONFIG_DIR, default_config_path
 
 
 def write_temp_config(base_cfg, out_path, overrides):
@@ -119,7 +120,7 @@ def run_category(category, data_root, base_config, output_root, seed=42):
 
     cmd = [
         sys.executable,
-        str(Path(__file__).resolve().parent / "run_full_pipeline.py"),
+        str(Path(__file__).resolve().parent / "full_pipeline.py"),
         "--config",
         str(temp_cfg),
         "--data_root",
@@ -173,10 +174,10 @@ def run_category(category, data_root, base_config, output_root, seed=42):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="03_code/configs/default.yaml")
+    parser.add_argument("--config", type=str, default=default_config_path())
     parser.add_argument("--data_root", type=str, required=True)
     parser.add_argument("--categories", nargs="+", default=["cable", "transistor", "capsule"])
-    parser.add_argument("--output_dir", type=str, default="runs/run22_caption_compare/model")
+    parser.add_argument("--output_dir", type=str, default="outputs/run22_caption_compare/model")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -188,7 +189,7 @@ def main():
             else:
                 a[k] = v
 
-    configs_dir = Path(__file__).resolve().parent.parent / "configs"
+    configs_dir = CONFIG_DIR
     default_cfg_path = configs_dir / "default.yaml"
     if default_cfg_path.exists():
         with open(default_cfg_path, "r", encoding="utf-8") as f:

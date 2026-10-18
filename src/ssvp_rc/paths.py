@@ -18,6 +18,8 @@ SAMPLE_INPUTS_DIR = REPO_ROOT / "data" / "samples"
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 OUTPUTS_DIR = REPO_ROOT / "outputs"
 LOGS_DIR = OUTPUTS_DIR
+ABLATIONS_DIR = OUTPUTS_DIR / "ablations"
+ABLATION_JSON_DIR = OUTPUTS_DIR / "ablation_json_results"
 
 
 def default_config_path(config_name="default.yaml"):

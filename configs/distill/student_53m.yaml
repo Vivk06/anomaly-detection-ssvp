@@ -79,8 +79,8 @@ training:
     start_epoch: 2
   distillation:
     enabled: true
-    teacher_checkpoint: "./05_results/ablations/run21_resplit_15es/best_model.pth"
-    teacher_config: "./03_code/configs/default.yaml"
+    teacher_checkpoint: "<checkpoint.pth>"
+    teacher_config: "./configs/default.yaml"
     lambda_map: 0.25
     lambda_score: 0.10
     lambda_feat: 0.0
@@ -95,7 +95,7 @@ training:
 
 data:
   dataset: "mvtec"
-  data_root: "./04_data/datasets/cable_resplit"
+  data_root: "./data/mvtec"
   img_size: 518
   mask_size: 37
   center_crop: false

@@ -2,11 +2,11 @@
 Run full pipeline: train, test, and generate visualizations + captions
 
 Usage (example):
-    python 03_code/scripts/run_full_pipeline.py --config 03_code/configs/default.yaml --data_root 04_data/datasets/cable_resplit/cable --output_dir 05_results/ablations/run1
+    python scripts/pipelines/full_pipeline.py --config configs/default.yaml --data_root <mvtec_root>/cable --output_dir <output_dir>
 
 This script:
   - launches `train.py` (on GPU if available)
-  - runs `inference.py` to compute metrics
+  - runs `eval_clean.py` to compute metrics
     - samples 5 random test images, generates visualizations and captions
   - saves visualizations and captions under `<output_dir>/visualizations_with_captions/`
 
@@ -31,9 +31,8 @@ import torch
 import torch.nn as nn
 from PIL import Image
 
-from path_utils import LOGS_DIR, SCRIPTS_DIR, default_config_path, ensure_import_paths
+from ssvp_rc.paths import LOGS_DIR, SCRIPTS_DIR, default_config_path
 
-ensure_import_paths()
 
 
 def run_subprocess(args, env=None):
@@ -41,9 +40,9 @@ def run_subprocess(args, env=None):
     subprocess.run(args, check=True)
 
 
-TRAIN_SCRIPT = str(SCRIPTS_DIR / "train.py")
-INFERENCE_SCRIPT = str(SCRIPTS_DIR / "inference.py")
-NOISE_EVAL_SCRIPT = str(SCRIPTS_DIR / "evaluate_noise_robustness.py")
+TRAIN_SCRIPT = str(SCRIPTS_DIR / "pipelines" / "train.py")
+INFERENCE_SCRIPT = str(SCRIPTS_DIR / "eval" / "eval_clean.py")
+NOISE_EVAL_SCRIPT = str(SCRIPTS_DIR / "eval" / "eval_noisy.py")
 
 
 def _normalize_token_label(value):
@@ -125,7 +124,7 @@ def _build_generation_prompt(sample, fallback_prompt):
 
 
 def _collect_caption_finetune_records(config, categories, max_samples=96, seed=42):
-    from data.mvtec import MVTecDataset
+    from ssvp_rc.data.mvtec import MVTecDataset
 
     ds = MVTecDataset(
         data_root=config["data"]["data_root"],
@@ -407,9 +406,9 @@ def sample_and_save_visuals(
     force_caption_int8=False,
 ):
     # Import project utilities to reuse preprocessing and visualization
-    from utils import load_config, set_seed, denormalize_image, postprocess_anomaly_map, visualize_results
-    from models.ssvp import SSVP
-    from data.mvtec import MVTecDataset
+    from ssvp_rc.utils import load_config, set_seed, denormalize_image, postprocess_anomaly_map, visualize_results
+    from ssvp_rc.models.ssvp import SSVP
+    from ssvp_rc.data.mvtec import MVTecDataset
 
     config = load_config(config_path)
     sigma = config.get("eval", {}).get("gaussian_sigma", 1.5)
@@ -577,7 +576,7 @@ def main():
         print("No checkpoint found. Provide --checkpoint or ensure output_dir contains saved checkpoints.")
         sys.exit(1)
 
-    # 3) Evaluate via inference.py + noise robustness (optional)
+    # 3) Evaluate via eval_clean.py + noise robustness (optional)
     if not args.skip_eval:
         eval_dir = Path(output_dir) / "eval_results"
         eval_dir.mkdir(parents=True, exist_ok=True)

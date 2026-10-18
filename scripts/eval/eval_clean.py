@@ -5,8 +5,8 @@ Evaluates a trained SSVP model on the MVTec-AD test set.
 Computes both image-level and pixel-level metrics, generates visualizations.
 
 Usage:
-    python 03_code/scripts/inference.py --config 03_code/configs/default.yaml --checkpoint 05_results/ablations/run21_resplit_15es/best_model.pth
-    python 03_code/scripts/inference.py --config 03_code/configs/default.yaml --checkpoint 05_results/ablations/run21_resplit_15es/best_model.pth --visualize
+    python scripts/eval/eval_clean.py --config configs/default.yaml --checkpoint <output_dir>
+    python scripts/eval/eval_clean.py --config configs/default.yaml --checkpoint <output_dir> --visualize
 """
 
 import os
@@ -20,14 +20,13 @@ from torch.cuda.amp import autocast
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-from path_utils import LOGS_DIR, default_config_path, ensure_import_paths
+from ssvp_rc.paths import LOGS_DIR, default_config_path
 
-ensure_import_paths()
 
-from models.ssvp import SSVP
-from data.mvtec import MVTecDataset, MVTEC_CATEGORIES
-from data.transforms import DualResizeTransform
-from utils import (
+from ssvp_rc.models.ssvp import SSVP
+from ssvp_rc.data.mvtec import MVTecDataset, MVTEC_CATEGORIES
+from ssvp_rc.data.transforms import DualResizeTransform
+from ssvp_rc.utils import (
     load_config, set_seed,
     compute_image_level_metrics, compute_pixel_level_metrics,
     postprocess_anomaly_map, visualize_results, denormalize_image,
