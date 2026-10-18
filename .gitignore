@@ -1,0 +1,12 @@
+.venv/
+logs/
+outputs/
+data/mvtec/
+__pycache__/
+*.pth
+*.pt
+*.ckpt
+*.npy
+*.log
+.pytest_cache/
+*.egg-info/
