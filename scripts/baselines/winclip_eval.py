@@ -7,13 +7,6 @@ import numpy as np
 import torch
 from ssvp_rc.paths import DATASETS_DIR, OUTPUTS_DIR
 
-from third_party.winclip.datasets import get_dataloader_from_args
-from third_party.winclip.datasets import dataset_classes
-from third_party.winclip.datasets import denormalization
-from third_party.winclip.utils.eval_utils import specify_resolution
-from third_party.winclip.utils.metrics import metric_cal
-from third_party.winclip.WinCLIP.model import WinClipAD
-from third_party.winclip.utils.training_utils import setup_seed
 
 
 def ensure_category_has_defects(mvtec_dir, category):
@@ -44,6 +37,11 @@ def add_gaussian_noise(batch, noise_std, noise_p):
 
 def run_category(category, mvtec_dir, out_root, device, batch_size=32, noise_std=0.0, noise_p=0.0):
     # configure dataset path used by WinCLIP
+    from third_party.winclip.datasets import get_dataloader_from_args, denormalization
+    from third_party.winclip.utils.eval_utils import specify_resolution
+    from third_party.winclip.utils.metrics import metric_cal
+    from third_party.winclip.WinCLIP.model import WinClipAD
+    from third_party.winclip.utils.training_utils import setup_seed
     import third_party.winclip.datasets.mvtec as mvtec_mod
 
     # handle cases where dataset layout is either <mvtec-root>/<category>/(test|train)
