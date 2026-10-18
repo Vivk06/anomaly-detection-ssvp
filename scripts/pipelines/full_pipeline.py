@@ -404,6 +404,7 @@ def sample_and_save_visuals(
     seed=42,
     force_caption_finetune=False,
     force_caption_int8=False,
+    categories=None,
 ):
     # Import project utilities to reuse preprocessing and visualization
     from ssvp_rc.utils import load_config, set_seed, denormalize_image, postprocess_anomaly_map, visualize_results
@@ -412,7 +413,6 @@ def sample_and_save_visuals(
 
     config = load_config(config_path)
     sigma = config.get("eval", {}).get("gaussian_sigma", 1.5)
-    categories = None
     if data_root:
         dr = Path(data_root)
         if (dr / "train").is_dir() or (dr / "test").is_dir():
@@ -512,6 +512,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default=default_config_path())
     parser.add_argument("--data_root", type=str, default=None)
+    parser.add_argument("--categories", nargs="+", default=None,
+                        help="Categories to train, evaluate, and visualize")
     parser.add_argument("--output_dir", type=str, default=str(LOGS_DIR / "run_full_pipeline"))
     parser.add_argument("--checkpoint", type=str, default=None,
                         help="Optional checkpoint path to use when --skip_train is set")
@@ -527,6 +529,15 @@ def main():
     parser.add_argument("--skip_eval", action="store_true",
                         help="Skip inference/noise benchmark and only export sampled visuals + captions")
     args = parser.parse_args()
+
+    category_root = Path(args.data_root) if args.data_root else None
+    is_category_root = category_root is not None and (
+        (category_root / "train").is_dir() or (category_root / "test").is_dir()
+    )
+    if is_category_root and args.categories and args.categories != [category_root.name]:
+        parser.error("--categories must match the category named by --data_root")
+    categories = args.categories or ([category_root.name] if is_category_root else None)
+    data_root = str(category_root.parent) if is_category_root else args.data_root
 
     output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
@@ -546,14 +557,10 @@ def main():
     # 1) Train
     if not args.skip_train:
         train_cmd = [sys.executable, TRAIN_SCRIPT, "--config", config_for_run, "--output_dir", output_dir]
-        if args.data_root:
-            dr = Path(args.data_root)
-            # If user pointed to a category directory (e.g., ./cable/), pass its parent as data_root and the folder name as category
-            if (dr / "train").is_dir() or (dr / "test").is_dir():
-                train_cmd += ["--data_root", str(dr.parent)]
-                train_cmd += ["--categories", dr.name]
-            else:
-                train_cmd += ["--data_root", args.data_root]
+        if data_root:
+            train_cmd += ["--data_root", data_root]
+        if categories:
+            train_cmd += ["--categories", *categories]
         if args.resume:
             train_cmd += ["--resume", args.resume]
         # Allow user to override epochs via env var or pass-through config
@@ -584,13 +591,10 @@ def main():
         calibration_file = Path(output_dir) / "calibration_thresholds.json"
         if calibration_file.exists():
             eval_cmd += ["--calibration_file", str(calibration_file)]
-        if args.data_root:
-            dr = Path(args.data_root)
-            if (dr / "train").is_dir() or (dr / "test").is_dir():
-                eval_cmd += ["--data_root", str(dr.parent)]
-                eval_cmd += ["--categories", dr.name]
-            else:
-                eval_cmd += ["--data_root", args.data_root]
+        if data_root:
+            eval_cmd += ["--data_root", data_root]
+        if categories:
+            eval_cmd += ["--categories", *categories]
         run_subprocess(eval_cmd)
 
         # 3b) Robustness benchmark on heavily noised test images
@@ -606,22 +610,20 @@ def main():
         if calibration_file.exists():
             noise_cmd += ["--calibration_file", str(calibration_file)]
 
-        if args.data_root:
-            dr = Path(args.data_root)
-            if (dr / "train").is_dir() or (dr / "test").is_dir():
-                noise_cmd += ["--data_root", str(dr.parent)]
-                noise_cmd += ["--categories", dr.name]
-            else:
-                noise_cmd += ["--data_root", args.data_root]
+        if data_root:
+            noise_cmd += ["--data_root", data_root]
+        if categories:
+            noise_cmd += ["--categories", *categories]
 
         run_subprocess(noise_cmd)
 
     # 4) Sample random test images, generate captions + visualizations
     sample_and_save_visuals(
-        str(ckpt), config_for_run, args.data_root, output_dir,
+        str(ckpt), config_for_run, data_root, output_dir,
         num_samples=args.num_vis_samples,
         force_caption_finetune=args.caption_finetune,
         force_caption_int8=args.caption_text_int8,
+        categories=categories,
     )
 
 

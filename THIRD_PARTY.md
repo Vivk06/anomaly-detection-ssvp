@@ -4,4 +4,4 @@
 
 `third_party/anomalyclip/` carries the source implementation and its upstream `LICENSE`. We dropped upstream README images and log-only outputs. We also dropped the WinCLIP teaser image and its old installation script. The active WinCLIP wrapper lives under `scripts/baselines/`. The simulated AnomalyCLIP wrapper was removed; the vendored AnomalyCLIP source and its upstream license remain.
 
-Vendored code may need dependencies beyond the package's core development environment when you run a baseline. The repository does not ship pretrained weights or datasets.
+For the WinCLIP baseline, install its optional dependencies into the existing environment with `.venv/bin/pip install -e ".[winclip]"`. The repository does not ship pretrained weights or datasets.

@@ -23,32 +23,32 @@ def _load_json(path: str) -> Dict:
 
 
 def _extract_clean_metrics(results_json: Dict) -> Dict[str, float]:
-    overall = results_json.get("overall", {})
-    image = overall.get("image_level", {})
-    pixel = overall.get("pixel_level", {})
+    overall = results_json["overall"]
+    image = overall["image_level"]
+    pixel = overall["pixel_level"]
 
     return {
-        "clean.image_auroc": float(image.get("auroc", 0.0)),
-        "clean.image_f1_max": float(image.get("f1_max", 0.0)),
-        "clean.image_ap": float(image.get("ap", 0.0)),
-        "clean.pixel_auroc": float(pixel.get("auroc", 0.0)),
-        "clean.pixel_pro": float(pixel.get("pro", 0.0)),
-        "clean.pixel_ap": float(pixel.get("ap", 0.0)),
+        "clean.image_auroc": float(image["auroc"]),
+        "clean.image_f1_max": float(image["f1_max"]),
+        "clean.image_ap": float(image["ap"]),
+        "clean.pixel_auroc": float(pixel["auroc"]),
+        "clean.pixel_pro": float(pixel["pro"]),
+        "clean.pixel_ap": float(pixel["ap"]),
     }
 
 
 def _extract_noise_metrics(robustness_json: Dict) -> Dict[str, float]:
-    noisy = robustness_json.get("noisy", {})
-    image = noisy.get("image_level", {})
-    pixel = noisy.get("pixel_level", {})
+    noisy = robustness_json["noisy"]
+    image = noisy["image_level"]
+    pixel = noisy["pixel_level"]
 
     return {
-        "noisy.image_auroc": float(image.get("auroc", 0.0)),
-        "noisy.image_f1_max": float(image.get("f1_max", 0.0)),
-        "noisy.image_ap": float(image.get("ap", 0.0)),
-        "noisy.pixel_auroc": float(pixel.get("auroc", 0.0)),
-        "noisy.pixel_pro": float(pixel.get("pro", 0.0)),
-        "noisy.pixel_ap": float(pixel.get("ap", 0.0)),
+        "noisy.image_auroc": float(image["auroc"]),
+        "noisy.image_f1_max": float(image["f1_max"]),
+        "noisy.image_ap": float(image["ap"]),
+        "noisy.pixel_auroc": float(pixel["auroc"]),
+        "noisy.pixel_pro": float(pixel["pro"]),
+        "noisy.pixel_ap": float(pixel["ap"]),
     }
 
 
@@ -59,9 +59,8 @@ def _build_metric_set(run_dir: str) -> Dict[str, float]:
     results = _load_json(results_path)
     metrics = _extract_clean_metrics(results)
 
-    if os.path.exists(noise_path):
-        robustness = _load_json(noise_path)
-        metrics.update(_extract_noise_metrics(robustness))
+    robustness = _load_json(noise_path)
+    metrics.update(_extract_noise_metrics(robustness))
 
     return metrics
 
@@ -69,9 +68,13 @@ def _build_metric_set(run_dir: str) -> Dict[str, float]:
 def _compare_metrics(
     baseline: Dict[str, float], candidate: Dict[str, float], max_drop: float
 ) -> Tuple[bool, Dict[str, Dict[str, float]], str, float]:
-    shared_keys = sorted(set(baseline.keys()) & set(candidate.keys()))
+    if baseline.keys() != candidate.keys():
+        missing = sorted(baseline.keys() - candidate.keys())
+        extra = sorted(candidate.keys() - baseline.keys())
+        raise ValueError(f"Metric sets differ: missing={missing}, extra={extra}")
+    shared_keys = sorted(baseline)
     if not shared_keys:
-        raise RuntimeError("No shared metrics found between baseline and candidate.")
+        raise ValueError("No metrics found between baseline and candidate.")
 
     comparisons: Dict[str, Dict[str, float]] = {}
     gate_ok = True

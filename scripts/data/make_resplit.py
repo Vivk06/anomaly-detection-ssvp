@@ -123,12 +123,22 @@ def main():
         raise FileNotFoundError(f"Source path not found: {source_root}")
 
     output_root = Path(args.output_root)
+    category_sources = {
+        category: resolve_category_root(source_root, category)
+        for category in args.categories
+    }
+    for category in args.categories:
+        destination = (output_root / category).resolve()
+        for source in category_sources.values():
+            input_dir = source.resolve()
+            if destination == input_dir or destination in input_dir.parents or input_dir in destination.parents:
+                raise ValueError(f"Output category {destination} overlaps input category {input_dir}")
     output_root.mkdir(parents=True, exist_ok=True)
 
     combined_summary = {"seed": args.seed, "split": {"train": 0.7, "test": 0.2, "val": 0.1}, "categories": {}}
 
     for category in args.categories:
-        category_source = resolve_category_root(source_root, category)
+        category_source = category_sources[category]
         category_output = output_root / category
         if category_output.exists():
             shutil.rmtree(category_output)

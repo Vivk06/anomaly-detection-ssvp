@@ -18,6 +18,7 @@ dependencies = [
 [project.optional-dependencies]
 captions = ["bert-score>=0.3.13"]
 dev = ["pytest"]
+winclip = ["loguru", "scikit-image", "seaborn", "pandas"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
